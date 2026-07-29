@@ -1,7 +1,9 @@
-import csv 
-from datetime import datetime 
+import csv
+from datetime import datetime
 
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 
 saldo = 100
 extrato = []
@@ -24,7 +26,8 @@ def exibir_banco():
     print("3- Sacar Dinheiro")
     print("4- Ver Extrato")
     print("5- Movimentações")
-    print("6- Sair")
+    print("6- Relatório Avançado (Pandas & NumPy)")
+    print("7- Sair")
 
 
 def consultar_saldo():
@@ -74,6 +77,54 @@ def ver_movimentacoes():
     plt.show()
 
 
+def relatorio_avancado():
+    print("\n===== RELATÓRIO AVANÇADO =====")
+
+    # --- Parte 1: Pandas -> ler o CSV e organizar como tabela (DataFrame) ---
+    # Repare a diferença: em vez de um "for" lendo linha por linha, o pandas
+    # carrega o arquivo inteiro em uma tabela e já sabemos manipular colunas.
+    colunas = ["Data", "Tipo", "Valor", "Saldo"]
+    try:
+        df = pd.read_csv(ARQUIVO_CSV, names=colunas)
+    except FileNotFoundError:
+        print("Nenhuma movimentação registrada ainda.")
+        return
+
+    df["Data"] = pd.to_datetime(df["Data"], format="%d/%m/%Y %H:%M:%S")
+
+    print("\n-- Tabela de movimentações (pandas.DataFrame) --")
+    print(df.to_string(index=False))
+
+    # groupby: soma os valores agrupando por tipo de movimentação
+    print("\n-- Total por tipo (df.groupby) --")
+    print(df.groupby("Tipo")["Valor"].sum())
+
+    # describe: estatística descritiva pronta (contagem, média, min, max...)
+    print("\n-- Estatística dos valores (df['Valor'].describe()) --")
+    print(df["Valor"].describe())
+
+    # filtro: só as movimentações de hoje
+    hoje = df[df["Data"].dt.date == datetime.now().date()]
+    print(f"\n-- Movimentações de hoje: {len(hoje)} --")
+
+    # --- Parte 2: NumPy -> cálculos sobre o histórico de saldo ---
+    # Toda coluna do pandas já é, por baixo dos panos, um array NumPy.
+    # Aqui pegamos essa coluna "pura" para fazer contas em todos os números
+    # de uma vez, sem precisar escrever um "for".
+    saldos = df["Saldo"].to_numpy()
+
+    print("\n-- Estatísticas do saldo (numpy) --")
+    print(f"Saldo médio: R$ {np.mean(saldos):.2f}")
+    print(f"Maior saldo: R$ {np.max(saldos):.2f}")
+    print(f"Menor saldo: R$ {np.min(saldos):.2f}")
+    print(f"Desvio padrão: R$ {np.std(saldos):.2f}")
+
+    # diff: a diferença entre cada saldo e o saldo anterior, tudo de uma vez
+    variacoes = np.diff(saldos)
+    print("\n-- Variação entre movimentações (numpy.diff) --")
+    print(variacoes)
+
+
 def main():
     while True:
         exibir_banco()
@@ -89,6 +140,8 @@ def main():
         elif opcao == "5":
             ver_movimentacoes()
         elif opcao == "6":
+            relatorio_avancado()
+        elif opcao == "7":
             print("\nSaindo do sistema. Obrigado por utilizar o Caixa Eletrônico.")
             break
         else:
